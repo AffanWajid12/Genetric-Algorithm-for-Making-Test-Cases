@@ -1,28 +1,25 @@
 import random
 
-valid_cases = ["V:30Day","V:31Day","V:LeapYear","V:NonLeapYear","V:Year","V:Month","V:Day"]
+valid_cases = ["V:30Day","V:31Day","V:LeapYear","V:NonLeapYear"]
 invalid_cases = ["IV:Year","IV:Month","IV:Day","IV:30Day","IV:31Day","IV:LeapYear","IV:28Day"]
 boundary_cases = ["V:30DayBoundary","V:31DayBoundary","V:LeapYearBoundary","V:NonLeapYearBoundary","V:Month Boundary","V:Year Boundary"]
 category_weights = {
-    "V:Year": 0.5,
-    "V:Month": 0.5,
-    "V:Day": 0.5,
-    "V:30Day": 1.0,
-    "V:31Day": 1.0,
-    "V:LeapYear": 1.5,
+    "V:30Day": 10.0,
+    "V:31Day": 10.0,
+    "V:LeapYear": 10.5,
     "V:NonLeapYear": 6,
     "V:30DayBoundary": 20,
-    "V:31DayBoundary": 20,
-    "V:LeapYearBoundary": 40,
-    "V:NonLeapYearBoundary": 40,
-    "V:Month Boundary": 30,
-    "V:Year Boundary": 30,
-    "IV:Year": 1.0,
-    "IV:Month": 1.0,
-    "IV:Day": 1.0,
-    "IV:30Day": 20,
-    "IV:31Day": 20,
-    "IV:LeapYear": 50,
+    "V:31DayBoundary": 18,
+    "V:LeapYearBoundary": 440,
+    "V:NonLeapYearBoundary": 380,
+    "V:Month Boundary": 130,
+    "V:Year Boundary": 101,
+    "IV:Year": 100.0,
+    "IV:Month": 100.0,
+    "IV:Day": 100.0,
+    "IV:30Day": 150,
+    "IV:31Day": 200,
+    "IV:LeapYear": 100,
     "IV:28Day": 50,
 }
 def intialize_population(size):
@@ -49,18 +46,12 @@ def determine_category(test_case):
 
     if year < 0 or year > 9999:
         category.append("IV:Year")
-    else:
-        category.append("V:Year")
 
     if month <1 or month >12 :
         category.append("IV:Month")
-    else:
-        category.append("V:Month")
 
     if day<1 or day>31:
         category.append("IV:Day")
-    else:
-        category.append("V:Day")
 
     if month in [4,6,9,11] and day > 30:
         category.append("IV:30Day")
@@ -127,10 +118,9 @@ def fitness_calculation(population):
 
 
 def selection(fitness_list):
-
     for i in range(0,len(fitness_list)):
-        for j in range(0,len(fitness_list)):
-            if fitness_list[i][1]>fitness_list[j][1]:
+        for j in range(i,len(fitness_list)):
+            if fitness_list[i][1]<fitness_list[j][1]:
                 fitness_list[i],fitness_list[j] = fitness_list[j],fitness_list[i]
     end = int(len(fitness_list)/2)
     selected = []
@@ -140,33 +130,37 @@ def selection(fitness_list):
 
 
 def crossover_population(selected_population):
-    while len(selected_population) < 100:
-            parent1 = random.choice(selected_population)
-            parent2 = random.choice(selected_population)
-            while parent1 == parent2:
-                parent2 = random.choice(selected_population)
-            rand_num = random.randint(1,50)
-            child_day = 0
-            child_month =0
-            child_year = 0
-            if rand_num <=50:
-                child_day = parent1[0]
-            else:
-                child_day = parent2[0]
-            rand_num = random.randint(1, 50)
-            if rand_num <=50:
-                child_month = parent1[1]
-            else:
-                child_month = parent2[1]
-            rand_num = random.randint(1, 50)
-            if rand_num <=50:
-                child_year = parent1[2]
-            else:
-                child_year = parent2[2]
+    max_val = len(selected_population)-1
+    while len(selected_population)<100:
+        parent1 = random.randint(0, max_val)
+        parent2 = random.randint(0, max_val)
+        while parent1 == parent2:
+            value = random.randint(0, max_val)
+            parent2 = random.randint(0, max_val)
+        rand_num = random.randint(1, 100)
+        child_day = 0
+        child_month = 0
+        child_year = 0
+        if rand_num <= 50:
+            child_day = selected_population[parent1][0]
+        else:
+            child_day = selected_population[parent2][0]
+        rand_num = random.randint(1, 100)
+        if rand_num <= 50:
+            child_month = selected_population[parent1][1]
+        else:
+            child_month = selected_population[parent2][1]
+        rand_num = random.randint(1, 100)
+        if rand_num <= 50:
+            child_year = selected_population[parent1][2]
+        else:
+            child_year = selected_population[parent2][2]
 
-            child = (child_day,child_month,child_year)
-            selected_population.append(child)
+        child = (child_day, child_month, child_year)
+        selected_population.append(child)
+
     return selected_population
+
 
 def mutator(selected_population):
     for i in range(0,len(selected_population)):
@@ -174,8 +168,8 @@ def mutator(selected_population):
         value = random.randint(1,100)
         if value<=15:
             date = list(selected_population[i])
-            date[0] += max(1,min(31,random.randint(-1,1)))
-            date[1] += max(1,min(12,random.randint(-1,1)))
+            date[0] += max(1,min(32,random.randint(-1,1)))
+            date[1] += max(1,min(13,random.randint(-1,1)))
             date[2] += max(0,min(9999,random.randint(-1,1)))
 
             if random.random() < 0.05:
@@ -197,25 +191,64 @@ def run_genetic_algo(n):
     max_test = 0
     answer = population
     max_tested = None
-    while count<=n or len(tested_categories)/20.0 > 80:
+    while count<=n or 100*(len(tested_categories)/17.0) > 90:
         tested_categories = set()
         fitness_list = fitness_calculation(population)
         selected = selection(fitness_list)
         crossover_population(selected)
         population = mutator(selected)
+        population = list(set(population))
         count+=1
         for test_case in population:
             for category in determine_category(test_case):
                 tested_categories.add(category)
-        print(tested_categories)
 
         if max_test<len(tested_categories):
             answer = population
             max_test = len(tested_categories)
             max_tested = tested_categories
-    print(max_tested)
-    print(len(max_tested))
-    return answer
+    print("Coverage Complete = ",max_test/17*100)
+    #print(max_tested)
+    #print(len(max_tested))
+    return answer,count,max_tested
+def test_validity(test_case):
+    for i in determine_category(test_case):
+        if i in invalid_cases:
+            return False
+    return True
+def test_boundary(test_case):
+    for i in determine_category(test_case):
+        if i in boundary_cases:
+            return True
+    return False
+def best_test_cases():
+    count_valid = 0
+    count_invalid = 0
+    count_boundary = 0
+    best_population,categoires_count,category_tested = None,None,None
+    while count_valid<10 and count_invalid<10 and count_boundary<10:
+        best_population,categoires_count,category_tested = run_genetic_algo(100)
+        for test_case in best_population:
+            if test_validity(test_case):
+                count_valid+=1
+            else:
+                count_invalid+=1
+            if test_boundary(test_case) and test_validity(test_case):
+                count_boundary+=1
+
+    print("Test Cases: ")
+    print("Valid: ")
+    for test_case in best_population:
+        if test_validity(test_case):
+            print(test_case," | Categories "," , ".join(determine_category(test_case)))
+    print("Invalid: ")
+    for test_case in best_population:
+        if not test_validity(test_case):
+            print(test_case," | Categories "," , ".join(determine_category(test_case)))
+    print("Boundary: ")
+    for test_case in best_population:
+        if test_boundary(test_case) and test_validity(test_case):
+            print(test_case," | Categories "," , ".join(determine_category(test_case)))
 
 
-print(run_genetic_algo(1000))
+best_test_cases()
