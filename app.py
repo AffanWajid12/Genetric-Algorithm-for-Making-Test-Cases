@@ -1,5 +1,8 @@
 import random
 
+print("SADasd")
+
+
 def intialize_population(size):
     """
 
