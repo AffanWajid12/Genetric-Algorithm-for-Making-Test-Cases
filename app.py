@@ -6,8 +6,8 @@ boundary_cases = ["V:30DayBoundary","V:31DayBoundary","V:LeapYearBoundary","V:No
 category_weights = {
     "V:30Day": 10.0,
     "V:31Day": 10.0,
-    "V:LeapYear": 10.5,
-    "V:NonLeapYear": 6,
+    "V:LeapYear": 110.5,
+    "V:NonLeapYear": 90,
     "V:30DayBoundary": 20,
     "V:31DayBoundary": 18,
     "V:LeapYearBoundary": 440,
