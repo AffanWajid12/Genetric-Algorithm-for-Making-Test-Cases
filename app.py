@@ -43,9 +43,19 @@ def intialize_population(size):
     return population
 
 def determine_category(test_case):
+    """
+    Here we determine which category does the test case fall into
+    A single test case can come into multiple categories and hence a list is returned instead of a single category as a
+     string
+    :param test_case: The test_case for which the categories have to be determined
+    :return: List of categories
+    """
+
+    # Initially category list is empty
     category = []
     day,month,year = test_case
 
+    # Bellow are all the cases on the basis of which category is evaluated of our test case
     if year < 0 or year > 9999:
         category.append("IV:Year")
 
@@ -71,6 +81,7 @@ def determine_category(test_case):
         else:
             category.append("V:31Day")
 
+    # This is for February to check leap year cases
     if month == 2:
         is_leap = (year %4 ==0 and year %100 !=0 ) or (year % 400 == 0)
         if is_leap and day > 29:
@@ -93,9 +104,22 @@ def determine_category(test_case):
          category.append("V:Month Boundary")
     if year == 1 or year == 9999:
         category.append("V:Year Boundary")
+
+    # At the end we return the required category
     return category
 
 def fitness_calculation(population):
+
+    """
+    This function is used to calculate the fitness value for each test case by counting the number of categories it is
+    testing and dividing by the number of times the category is already tested by other test cases
+
+    :param population: The population for which the fitness value has to be calculated
+    :return: List of list containing the test case, and it's fitness value
+    """
+
+    # We first calculate the total counts of each number of categories. Initially they are all zero
+
     counts = {}
     for i in valid_cases:
         counts[i] = 0
@@ -103,12 +127,15 @@ def fitness_calculation(population):
         counts[i] = 0
     for i in boundary_cases:
         counts[i] = 0
+
     fitness_list = []
-    #Count the amount of each category
+
+    # Count the amount for each category
     for date in population:
         category_list = determine_category(date)
         for i in category_list:
             counts[i] += 1
+    # Now based on count and weights of the category we calculate the total fitness
     for date in population:
         category = determine_category(date)
         fitness = 0
@@ -120,6 +147,13 @@ def fitness_calculation(population):
 
 
 def selection(fitness_list):
+    """
+    Now we select the population that has the best fitness based on ranking and half of the population is removed
+    if they have lower fitness value. Half of the population is selected.
+    :param fitness_list: The population with its fitness value
+    :return: List of selected test cases on the basis of fitness value
+    """
+
     for i in range(0,len(fitness_list)):
         for j in range(i,len(fitness_list)):
             if fitness_list[i][1]<fitness_list[j][1]:
@@ -208,7 +242,7 @@ def run_genetic_algo(n):
             for category in determine_category(test_case):
                 tested_categories.add(category)
 
-        coverage_percent = (len(tested_categories) / 17.0) * 100
+        coverage_percent = (max_test / 17.0) * 100
         coverage_per_generations.append(coverage_percent)
 
         if max_test<len(tested_categories):
