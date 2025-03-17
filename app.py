@@ -2,9 +2,13 @@ import random
 import matplotlib.pyplot as plotter
 import json
 
+# First we have to know all the types of valid,invalid and boundary cases
 valid_cases = ["V:30Day","V:31Day","V:LeapYear","V:NonLeapYear"]
 invalid_cases = ["IV:Year","IV:Month","IV:Day","IV:30Day","IV:31Day","IV:LeapYear","IV:28Day"]
 boundary_cases = ["V:30DayBoundary","V:31DayBoundary","V:LeapYearBoundary","V:NonLeapYearBoundary","V:Month Boundary","V:Year Boundary"]
+
+# These are the weights that are assigned to each category based on their rarity in the generation process and
+# also their value for testing
 category_weights = {
     "V:30Day": 10.0,
     "V:31Day": 10.0,
@@ -154,11 +158,14 @@ def selection(fitness_list):
     :return: List of selected test cases on the basis of fitness value
     """
 
+    # Sort the list based on fitness value in descending order
     for i in range(0,len(fitness_list)):
         for j in range(i,len(fitness_list)):
             if fitness_list[i][1]<fitness_list[j][1]:
                 fitness_list[i],fitness_list[j] = fitness_list[j],fitness_list[i]
     end = int(len(fitness_list)/2)
+
+    # Now selected half of the population and remove the rest
     selected = []
     for i in range(0,int(len(fitness_list)/2)):
         selected.append(fitness_list[i][0])
@@ -166,17 +173,32 @@ def selection(fitness_list):
 
 
 def crossover_population(selected_population):
+    """
+    Crossover done of the population till the required population size has been reached
+    :param selected_population: The population that needs to have cross over
+    :return: New population in the form of a list
+    """
+
+    # Selecting one the top half of the population to be produce children. We set the boundary for the top half
     max_val = len(selected_population)-1
+
+    # Keep on creating new children till the required population size has been reached which is 100
+
     while len(selected_population)<100:
+
+        # Select one of the top 50 parents
         parent1 = random.randint(0, max_val)
         parent2 = random.randint(0, max_val)
         while parent1 == parent2:
             value = random.randint(0, max_val)
             parent2 = random.randint(0, max_val)
+
         rand_num = random.randint(1, 100)
         child_day = 0
         child_month = 0
         child_year = 0
+
+        # Now randomly do crossover between the parents
         if rand_num <= 50:
             child_day = selected_population[parent1][0]
         else:
@@ -195,10 +217,16 @@ def crossover_population(selected_population):
         child = (child_day, child_month, child_year)
         selected_population.append(child)
 
+    # Return the selected population
     return selected_population
 
 
 def mutator(selected_population):
+    """
+    Mutate the population on the basis of a certain chance of mutation and range of mutation of value
+    :param selected_population: That needs to be mutated
+    :return:  population that is mutated
+    """
     for i in range(0,len(selected_population)):
         # 15 percent change it is changed
         value = random.randint(1,100)
@@ -209,7 +237,7 @@ def mutator(selected_population):
             date[2] += max(0,min(9999,random.randint(-1,1)))
 
             if random.random() < 0.05:
-                # 5% chance to force a boundary in one component
+                # 5% chance to force a boundary in one component for checking the boundaries
                 boundary_choice = random.choice([0, 1, 2])
                 if boundary_choice == 0:
                     date[0] = random.choice([1, 30, 31])
@@ -218,9 +246,23 @@ def mutator(selected_population):
                 else:
                     date[2] = random.choice([0, 1, 9999])
             selected_population[i] = tuple(date)
+
+    # Return mutated population
+
     return selected_population
 
 def run_genetic_algo(n):
+
+    """
+    This is the genetic algorithm for generating test cases that have cover the maximum number of coverage for
+    categories
+    :param n: Number of maximum generations of the genetic algorithm to be run for
+    :return: Population,Number of generations and count of the number of categories tested
+    """
+
+    # Different variables used for setting up the population,local search,getting the required population and
+    # calculating coverages for each generation
+
     count = 0
     population = intialize_population(100)
     tested_categories = set()
@@ -228,7 +270,9 @@ def run_genetic_algo(n):
     answer = population
     max_tested = None
     coverage_per_generations = []
-    no_of_generations = 100
+    no_of_generations = n
+
+    # Run the genetic algorithm while specific number of generations or when 96 coverage criteria has been reached
     while count<no_of_generations or 100*(len(tested_categories)/17.0) >= 95:
         tested_categories = set()
         fitness_list = fitness_calculation(population)
@@ -245,12 +289,14 @@ def run_genetic_algo(n):
         coverage_percent = (max_test / 17.0) * 100
         coverage_per_generations.append(coverage_percent)
 
+        # Compare with the current local maximum
+
         if max_test<len(tested_categories):
             answer = population
             max_test = len(tested_categories)
             max_tested = tested_categories
 
-
+    # Print the coverages,the number of generations and also the plot
     print("Coverage Complete = ",max_test/17*100)
     print("Total generations run = ",count)
     plotter.plot(range(1, len(coverage_per_generations) + 1), coverage_per_generations, marker='o', linestyle='-')
@@ -262,21 +308,31 @@ def run_genetic_algo(n):
 
     return answer,count,max_tested
 def test_validity(test_case):
+    # Test if the test cases is valid r not based on their category
     for i in determine_category(test_case):
         if i in invalid_cases:
             return False
     return True
 def test_boundary(test_case):
+    # Test if the test case if a boundary test case
     for i in determine_category(test_case):
         if i in boundary_cases:
             return True
     return False
 def best_test_cases():
+    """
+    This function is used to run the genetic algorithm and to print the top 10 best valid/invalid test cases and 5 best
+    boundary testing cases and also generating the JSON file and plotting the line graph
+    :return:None
+    """
     count_valid = 0
     count_invalid = 0
     count_boundary = 0
     best_population,categoires_count,category_tested = None,None,None
+
+    # Run the genetic algorithm till we reach this threshold
     while count_valid<10 and count_invalid<10 and count_boundary<5:
+
         best_population,categoires_count,category_tested = run_genetic_algo(100)
         for test_case in best_population:
             if test_validity(test_case):
@@ -286,7 +342,8 @@ def best_test_cases():
             if test_boundary(test_case) and test_validity(test_case):
                 count_boundary+=1
 
-
+    # Print the test cases based on if they are valid,invalid or boundary test case and also stored them in a dictionary
+    # That will be converted to a JSON file
     best_population.sort(key = lambda x: (-len(determine_category(x))))
     print("Test Cases: ")
     test_cases_dict = {"Valid Test Cases": [], "Invalid Test Cases": [], "Boundary Test Cases": []}
